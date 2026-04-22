@@ -198,37 +198,65 @@ def enviar(item, col):
                 return False
 
 # ================= LOOP =================
+def verificar_disparo_manual():
+    """Verifica se há comando manual no MongoDB"""
+    try:
+        cmd = col_config.find_one({"tipo": "comando_bot"})
+        if cmd and cmd.get("disparar_agora"):
+            print("⚡ DISPARO MANUAL DETECTADO!")
+            
+            # Reseta o comando primeiro
+            col_config.update_one(
+                {"tipo": "comando_bot"},
+                {"$set": {"disparar_agora": False}}
+            )
+            
+            # Busca e envia produto
+            item, col = buscar_produto()
+            if item:
+                enviar(item, col)
+                return True
+    except Exception as e:
+        print(f"⚠️ Erro no disparo manual: {e}")
+    return False
+
+def aguardar_com_verificacao(tempo_total):
+    """Aguarda mas verifica comando manual a cada 5 segundos"""
+    print(f"⏱️ Aguardando {tempo_total}s (verificando comando manual a cada 5s)...")
+    
+    intervalo = 5  # Verifica a cada 5 segundos
+    passados = 0
+    
+    while passados < tempo_total:
+        # Verifica se há disparo manual
+        if verificar_disparo_manual():
+            return True  # Disparo manual foi executado
+        
+        # Dorme pelo intervalo ou pelo tempo restante
+        dormir = min(intervalo, tempo_total - passados)
+        time.sleep(dormir)
+        passados += dormir
+    
+    return False
+
 def loop():
     print("🔄 BOT INICIADO - LOOP RODANDO...")
     print(f"⏱️ Intervalo: {INTERVALO_MIN}s - {INTERVALO_MAX}s")
 
     while True:
         try:
+            # Verifica disparo manual antes de buscar
+            verificar_disparo_manual()
+            
             item, col = buscar_produto()
 
             if item:
                 enviar(item, col)
                 tempo = random.randint(INTERVALO_MIN, INTERVALO_MAX)
-                print(f"⏱️ Aguardando {tempo}s...")
-                time.sleep(tempo)
+                aguardar_com_verificacao(tempo)
             else:
                 print("⏳ Nenhum produto, aguardando 30s...")
-                time.sleep(30)
-
-            # Disparo manual
-            try:
-                cmd = col_config.find_one({"tipo": "comando_bot"})
-                if cmd and cmd.get("disparar_agora"):
-                    print("⚡ DISPARO MANUAL!")
-                    item, col = buscar_produto()
-                    if item:
-                        enviar(item, col)
-                    col_config.update_one(
-                        {"tipo": "comando_bot"},
-                        {"$set": {"disparar_agora": False}}
-                    )
-            except Exception as e:
-                print(f"⚠️ Erro no disparo manual: {e}")
+                aguardar_com_verificacao(30)
 
         except Exception as e:
             print(f"❌ ERRO NO LOOP: {e}")
