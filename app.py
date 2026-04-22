@@ -68,15 +68,42 @@ def montar_legenda(item):
 
     pct = calcular_desconto(preco_de, preco)
     tag = f" <b>(-{pct}% OFF)</b>" if pct else ""
-    linha_de = f"<s>De: {preco_de}</s>\n" if pct else ""
-    aviso = "⚠️ Sujeito a alteração de preço!"
-
-    if "SHOPEE" in loja:
-        return f"✴️ <b>{nome}</b>\n{linha_de}✅ <b>Por: {preco}{tag}</b>\n🏪 Loja: #Shopee 🧡\n🔗 {link}\n{aviso}"
-    elif "ML" in loja:
-        return f"⚡ <b>{nome}</b>\n{linha_de}🔥 <b>POR APENAS: {preco}{tag}</b>\n🏪 Loja: #MercadoLivre 🛒\n🔗 {link}\n{aviso}"
+    
+    # Monta o texto com melhor espaçamento
+    if pct:
+        preco_texto = f"<s>De: {preco_de}</s>\n🔥 <b>Por: {preco}{tag}</b>"
     else:
-        return f"👗 <b>{nome}</b>\n{linha_de}💎 <b>PREÇO EXCLUSIVO: {preco}{tag}</b>\n🏪 Loja: #Shein 🖤\n🔗 {link}\n{aviso}"
+        preco_texto = f"💰 <b>{preco}</b>"
+    
+    if "SHOPEE" in loja:
+        return f"""✴️ <b>{nome}</b>
+
+{preco_texto}
+
+🏪 Loja: #Shopee 🧡
+🔗 {link}
+
+⚠️ <i>Sujeito a alteração de preço!</i>"""
+
+    elif "ML" in loja:
+        return f"""⚡ <b>{nome}</b>
+
+{preco_texto}
+
+🏪 Loja: #MercadoLivre 🛒
+🔗 {link}
+
+⚠️ <i>Sujeito a alteração de preço!</i>"""
+
+    else:
+        return f"""👗 <b>{nome}</b>
+
+{preco_texto}
+
+🏪 Loja: #Shein 🖤
+🔗 {link}
+
+⚠️ <i>Sujeito a alteração de preço!</i>"""
 
 # ================= BUSCA INTELIGENTE =================
 lista_lojas = ["SHOPEE", "ML", "SHEIN"]
