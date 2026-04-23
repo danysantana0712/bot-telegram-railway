@@ -134,14 +134,19 @@ def buscar_produto():
         
         vez = (vez + 1) % 3
 
-    # FALLBACK: concluido
+    # FALLBACK: concluido - pega um aleatório para variar
     print("  Buscando produtos concluídos...")
     for loja in lista_lojas:
         col = colls[loja]
         try:
-            item = col.find_one({"status": "concluido"}, max_time_ms=3000)
+            # Usa aggregate com $sample para pegar aleatório
+            cursor = col.aggregate([
+                {"$match": {"status": "concluido"}},
+                {"$sample": {"size": 1}}
+            ])
+            item = next(cursor, None)
             if item:
-                print(f"🔁 Repostando antigo de {loja}")
+                print(f"🔁 Repostando antigo de {loja}: {item.get('nome', 'N/A')[:40]}")
                 return item, col
         except Exception as e:
             print(f"  ⚠️ Erro no fallback {loja}: {e}")
@@ -209,8 +214,12 @@ def enviar(item, col):
                 sucesso = enviar_telegram(legenda)
 
             if sucesso:
-                col.update_one({"_id": item["_id"]}, {"$set": {"status": "concluido"}})
-                print("✅ Enviado com sucesso!")
+                # IMPORTANTE: Atualiza status para não enviar novamente
+                resultado = col.update_one(
+                    {"_id": item["_id"]}, 
+                    {"$set": {"status": "concluido"}}
+                )
+                print(f"✅ Enviado com sucesso! Status atualizado: {resultado.modified_count} documento(s)")
                 return True
             else:
                 raise Exception("Falha no envio")
@@ -241,8 +250,8 @@ def verificar_disparo_manual():
             # Busca e envia produto
             item, col = buscar_produto()
             if item:
-                enviar(item, col)
-                return True
+                sucesso = enviar(item, col)  # Envia e atualiza status
+                return sucesso
     except Exception as e:
         print(f"⚠️ Erro no disparo manual: {e}")
     return False
