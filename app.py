@@ -112,20 +112,20 @@ vez = 0
 def buscar_produto():
     global vez
 
-    print("🔍 Buscando produto...")
+    print(f"🔍 Buscando produto... (Vez atual: {lista_lojas[vez]})")
 
-    # PRIORIDADE: aprovados
+    # PRIORIDADE: aprovados - verifica em ordem circular
     for i in range(3):
         loja = lista_lojas[vez]
         col = colls[loja]
 
-        print(f"  Verificando {loja}...")
+        print(f"  [{i+1}/3] Verificando {loja} (aprovados)...")
         
         try:
             item = col.find_one({"status": "aprovado"}, max_time_ms=3000)
             if item:
                 vez = (vez + 1) % 3
-                print(f"✅ Produto encontrado em {loja}: {item.get('nome', 'N/A')[:40]}")
+                print(f"✅ Produto NOVO encontrado em {loja}: {item.get('nome', 'N/A')[:40]}")
                 return item, col
             else:
                 print(f"    Nenhum aprovado em {loja}")
@@ -134,24 +134,33 @@ def buscar_produto():
         
         vez = (vez + 1) % 3
 
-    # FALLBACK: concluido - pega um aleatório para variar
-    print("  Buscando produtos concluídos...")
-    for loja in lista_lojas:
+    # FALLBACK: concluido - também respeita a vez para alternar lojas
+    print("  Buscando produtos concluídos (alternando lojas)...")
+    
+    # Tenta 3 vezes, uma em cada loja, começando pela vez atual
+    for i in range(3):
+        loja = lista_lojas[vez]
         col = colls[loja]
+        
         try:
-            # Usa aggregate com $sample para pegar aleatório
+            # Usa aggregate com $sample para pegar aleatório da loja atual
             cursor = col.aggregate([
                 {"$match": {"status": "concluido"}},
                 {"$sample": {"size": 1}}
             ])
             item = next(cursor, None)
             if item:
+                vez = (vez + 1) % 3  # Avança para próxima loja na próxima vez
                 print(f"🔁 Repostando antigo de {loja}: {item.get('nome', 'N/A')[:40]}")
                 return item, col
+            else:
+                print(f"    Nenhum concluído em {loja}")
         except Exception as e:
             print(f"  ⚠️ Erro no fallback {loja}: {e}")
+        
+        vez = (vez + 1) % 3
 
-    print("❌ Nenhum produto encontrado")
+    print("❌ Nenhum produto encontrado em nenhuma loja")
     return None, None
 
 # ================= ENVIO TELEGRAM =================
