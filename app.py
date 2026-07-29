@@ -10,8 +10,8 @@ MONGO_URI = os.getenv("MONGO_URI")
 TOKEN = os.getenv("TELEGRAM_TOKEN")
 CHAT_ID = os.getenv("CHAT_ID")
 
-INTERVALO_MIN = 180  # 3 minutos
-INTERVALO_MAX = 600  # 10 minutos
+INTERVALO_MIN = 60  # 1 minutos
+INTERVALO_MAX = 180  # 3 minutos
 
 # ================= DIAGNÓSTICO MONGODB =================
 print("🔍 TESTANDO CONEXÃO COM MONGODB...")
